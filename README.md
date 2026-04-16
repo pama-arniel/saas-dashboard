@@ -19,7 +19,7 @@ A simple dashboard application demonstrating real-world frontend features includ
 
 ## Demo
 
-https://your-vercel-link
+https://saas-dashboard-ecru.vercel.app/
 
 ## What I Learned
 
