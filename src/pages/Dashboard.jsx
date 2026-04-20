@@ -1,116 +1,233 @@
-import MainLayout from "../layout/MainLayout";
-import { useQuery } from "@tanstack/react-query";
-import { fetchUsers } from "../services/api";
-import { useState } from "react";
+import { NavLink } from "react-router-dom";
 
 export default function Dashboard() {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["users"],
-    queryFn: fetchUsers,
-  });
+  const metrics = [
+    { label: "Total Orders", value: "2,500", delta: "+4.9%" },
+    { label: "Total Customers", value: "1,340", delta: "+2.7%" },
+    { label: "Total Revenue", value: "$5,567", delta: "+4.9%" },
+    { label: "Returning Buyers", value: "865", delta: "+3.4%" },
+  ];
 
-  const [sortOrder, setSortOrder] = useState("asc");
+  const monthlyRevenue = [
+    { month: "Jan", value: 18 },
+    { month: "Feb", value: 21 },
+    { month: "Mar", value: 24 },
+    { month: "Apr", value: 22 },
+    { month: "May", value: 26 },
+    { month: "Jun", value: 20 },
+    { month: "Jul", value: 33, highlight: true },
+    { month: "Aug", value: 19 },
+    { month: "Sep", value: 23 },
+    { month: "Oct", value: 17 },
+    { month: "Nov", value: 25 },
+    { month: "Dec", value: 29 },
+  ];
 
-  const [page, setPage] = useState(1);
-  const rowsPerPage = 5;
-
-  const [search, setSearch] = useState("");
-
-  const filteredData = (data || []).filter((user) =>
-    `${user.firstName} ${user.lastName}`
-      .toLowerCase()
-      .includes(search.toLowerCase()),
-  );
-
-  const sortedData = [...(filteredData || [])].sort((a, b) => {
-    const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
-    const nameB = `${b.firstName} ${b.lastName}`.toLowerCase();
-
-    if (sortOrder === "asc") return nameA.localeCompare(nameB);
-    return nameB.localeCompare(nameA);
-  });
-
-  const start = (page - 1) * rowsPerPage;
-  const paginatedData = (sortedData || []).slice(start, start + rowsPerPage);
+  const recentSales = [
+    {
+      id: "789901",
+      date: "2 Dec 2026",
+      customer: "Oliver John Brown",
+      category: "Shoes, Shirt",
+      status: "Pending",
+      items: "2 Items",
+      total: "$789.00",
+    },
+    {
+      id: "789902",
+      date: "1 Dec 2026",
+      customer: "Noah James Smith",
+      category: "Sneakers, T-shirt",
+      status: "Completed",
+      items: "3 Items",
+      total: "$967.00",
+    },
+    {
+      id: "789903",
+      date: "28 Nov 2026",
+      customer: "Amelia Victoria",
+      category: "Bags, Jacket",
+      status: "Shipped",
+      items: "1 Item",
+      total: "$349.00",
+    },
+  ];
 
   return (
-    <MainLayout>
-      <h1 style={{ marginBottom: "10px" }}>Users</h1>
+    <div className="screen shell-bg">
+      <div className="surface dashboard-surface">
+        <aside className="sidebar sidebar-light">
+          <div className="brand-row">
+            <div className="brand-badge">S</div>
+            <div className="brand-name">Salezy</div>
+          </div>
 
-      {isLoading && <p>Loading...</p>}
-      {error && <p>Error loading data</p>}
+          <div className="side-section-title">Main Menu</div>
+          <nav className="side-nav">
+            <NavLink to="/overview" className="side-item active">
+              Dashboard
+            </NavLink>
+            <a className="side-item" href="#orders">
+              Orders
+            </a>
+            <a className="side-item" href="#message">
+              Message
+            </a>
+            <a className="side-item" href="#products">
+              Products
+            </a>
+            <a className="side-item" href="#reports">
+              Reports
+            </a>
+            <a className="side-item" href="#marketplace">
+              Marketplace
+            </a>
+          </nav>
 
-      <input
-        placeholder="Search user..."
-        style={{ marginBottom: "10px", padding: "5px" }}
-        value={search}
-        onChange={(e) => {
-          setSearch(e.target.value);
-          setPage(1);
-        }}
-      />
+          <div className="side-section-title">Tools</div>
+          <nav className="side-nav">
+            <a className="side-item" href="#hubspot">
+              HubSpot Sales Hub
+            </a>
+            <a className="side-item" href="#zoho">
+              Zoho CRM
+            </a>
+            <a className="side-item" href="#zendesk">
+              Zendesk Sell
+            </a>
+            <NavLink to="/people" className="side-item">
+              People Screen
+            </NavLink>
+          </nav>
 
-      {data && (
-        <div
-          style={{
-            background: "#fff",
-            padding: "10px",
-            borderRadius: "5px",
-            maxWidth: "800px",
-          }}
-        >
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-            }}
-          >
-            <thead>
-              <tr>
-                <th
-                  style={{ borderBottom: "1px solid #ccc", textAlign: "left" }}
-                  onClick={() =>
-                    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                  }
-                >
-                  Name
-                </th>
-                <th
-                  style={{ borderBottom: "1px solid #ccc", textAlign: "left" }}
-                >
-                  Email
-                </th>
-              </tr>
-            </thead>
+          <div className="upgrade-card">
+            <h4>Boost with AI</h4>
+            <p>Get smart alerts and ready-made sales insights.</p>
+            <button type="button">Upgrade to Pro</button>
+          </div>
+        </aside>
 
-            <tbody>
-              {paginatedData.map((user) => (
-                <tr key={user.id}>
-                  <td style={{ padding: "8px 0" }}>
-                    {user.firstName} {user.lastName}
-                  </td>
-                  <td style={{ padding: "8px 0" }}>{user.email}</td>
+        <main className="content">
+          <header className="topbar">
+            <div className="topbar-search">
+              Search orders, products, or customers...
+            </div>
+            <div className="topbar-right">
+              <button type="button" className="ghost-button">
+                This Month
+              </button>
+              <button type="button" className="solid-button">
+                Export
+              </button>
+            </div>
+          </header>
+
+          <section className="welcome-row">
+            <h1>Welcome back, Sajibul!</h1>
+            <p>Monday, 24 December 2026</p>
+          </section>
+
+          <section className="metrics-grid">
+            {metrics.map((metric) => (
+              <article key={metric.label} className="metric-card">
+                <div className="metric-label">{metric.label}</div>
+                <div className="metric-value">{metric.value}</div>
+                <div className="metric-delta">
+                  {metric.delta} from the last month
+                </div>
+              </article>
+            ))}
+          </section>
+
+          <section className="chart-grid">
+            <article className="chart-card">
+              <div className="chart-card-head">
+                <div>
+                  <h3>Revenue Insights</h3>
+                  <div className="chart-big">$5,567.00</div>
+                </div>
+                <div className="chart-toggle">
+                  <button type="button" className="ghost-button">
+                    Monthly
+                  </button>
+                  <button type="button" className="solid-button small">
+                    Yearly
+                  </button>
+                </div>
+              </div>
+              <div className="bars">
+                {monthlyRevenue.map((bar) => (
+                  <div key={bar.month} className="bar-wrap">
+                    <div
+                      className={`bar ${bar.highlight ? "highlight" : ""}`}
+                      style={{ height: `${bar.value * 4}px` }}
+                    />
+                    <span>{bar.month}</span>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="chart-card gauge-card">
+              <h3>Sales Overview</h3>
+              <div className="gauge">
+                <div className="gauge-arc" />
+                <div className="gauge-value">70.8%</div>
+                <div className="gauge-label">Sales Growth</div>
+              </div>
+              <div className="gauge-foot">
+                <div>
+                  <span>Sales</span>
+                  <strong>$3,884.00</strong>
+                </div>
+                <div>
+                  <span>Target</span>
+                  <strong>$20,000.00</strong>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section className="table-card">
+            <div className="table-head">
+              <h3>Recent Sales</h3>
+              <input type="text" placeholder="Search" />
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Order Id</th>
+                  <th>Date</th>
+                  <th>Customer</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>Items</th>
+                  <th>Total</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <div style={{ marginTop: "10px" }}>
-        <button onClick={() => setPage(page - 1)} disabled={page === 1}>
-          Prev
-        </button>
-
-        <span style={{ margin: "0 10px" }}>Page {page}</span>
-
-        <button
-          onClick={() => setPage(page + 1)}
-          disabled={start + rowsPerPage >= (filteredData || []).length}
-        >
-          Next
-        </button>
+              </thead>
+              <tbody>
+                {recentSales.map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.id}</td>
+                    <td>{row.date}</td>
+                    <td>{row.customer}</td>
+                    <td>{row.category}</td>
+                    <td>
+                      <span
+                        className={`status-chip ${row.status.toLowerCase()}`}
+                      >
+                        {row.status}
+                      </span>
+                    </td>
+                    <td>{row.items}</td>
+                    <td>{row.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        </main>
       </div>
-    </MainLayout>
+    </div>
   );
 }
