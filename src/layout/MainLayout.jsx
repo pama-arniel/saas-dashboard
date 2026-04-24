@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 const topbarTitleByPath = {
@@ -6,13 +7,18 @@ const topbarTitleByPath = {
 };
 
 export default function MainLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const topbarTitle = topbarTitleByPath[location.pathname] || "Overview";
+  const closeSidebar = () => setSidebarOpen(false);
 
   return (
     <div className="screen shell-bg">
       <div className="surface dashboard-surface">
-        <aside className="sidebar sidebar-light">
+        {sidebarOpen && (
+          <div className="sidebar-overlay" onClick={closeSidebar} />
+        )}
+        <aside className={`sidebar sidebar-light ${sidebarOpen ? "open" : ""}`}>
           <div className="brand-row">
             <div className="brand-badge">S</div>
             <div className="brand-name">Salezy</div>
@@ -25,6 +31,7 @@ export default function MainLayout() {
               className={({ isActive }) =>
                 isActive ? "side-item active" : "side-item"
               }
+              onClick={closeSidebar}
             >
               Dashboard
             </NavLink>
@@ -61,6 +68,7 @@ export default function MainLayout() {
               className={({ isActive }) =>
                 isActive ? "side-item active" : "side-item"
               }
+              onClick={closeSidebar}
             >
               People Screen
             </NavLink>
@@ -76,8 +84,19 @@ export default function MainLayout() {
         <main className="content">
           <header className="main-topbar">
             <div className="main-topbar-left">
-              <h2 className="main-topbar-title">{topbarTitle}</h2>
+              <button
+                type="button"
+                className="menu-toggle"
+                aria-label="Toggle menu"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+              >
+                ≡
+              </button>
 
+              <h2 className="main-topbar-title">{topbarTitle}</h2>
+            </div>
+
+            <div className="main-topbar-search-wrap">
               <div className="main-topbar-search">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M10 4a6 6 0 1 1 0 12 6 6 0 0 1 0-12zm0-2a8 8 0 1 0 4.9 14.3l4.4 4.4 1.4-1.4-4.4-4.4A8 8 0 0 0 10 2z" />
