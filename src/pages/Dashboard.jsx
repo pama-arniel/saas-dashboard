@@ -43,6 +43,14 @@ export default function Dashboard() {
   const revenueData = revenueView === "monthly" ? monthlyRevenue : yearlyRevenue;
   const revenueTotal = revenueView === "monthly" ? "$486.00" : "$5,567.00";
 
+  const today = new Date();
+  const formattedDate = today.toLocaleDateString("en-US", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
   const recentSales = [
     {
       id: "789901",
@@ -77,7 +85,7 @@ export default function Dashboard() {
     <>
       <section className="welcome-row">
         <h1>Welcome back, Sajibul!</h1>
-        <p>Monday, 24 December 2026</p>
+        <p>{formattedDate}</p>
       </section>
 
       <section className="metrics-grid">
