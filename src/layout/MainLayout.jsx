@@ -124,7 +124,12 @@ export default function MainLayout() {
                 o
               </button>
               <button type="button" className="avatar-btn" aria-label="Profile">
-                SJ
+                <img
+                  src="https://i.pravatar.cc/72?img=12"
+                  alt="Profile"
+                  className="avatar-image-topbar"
+                  loading="lazy"
+                />
               </button>
             </div>
           </header>
