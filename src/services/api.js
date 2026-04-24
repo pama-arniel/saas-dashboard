@@ -14,3 +14,11 @@ export const fetchUsers = async () => {
 
   return response.data.users ?? [];
 };
+
+export const fetchOrders = async () => {
+  const response = await api.get("/carts", {
+    params: { limit: 10 },
+  });
+
+  return response.data.carts ?? [];
+};

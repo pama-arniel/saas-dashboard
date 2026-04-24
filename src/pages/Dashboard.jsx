@@ -1,4 +1,17 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchOrders } from "../services/api";
+
+const today = new Date();
+const formattedDate = today.toLocaleDateString("en-US", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+const BASE_DATE = Date.now();
+const STATUSES = ["Pending", "Completed", "Shipped"];
 
 export default function Dashboard() {
   const [chartsLoaded, setChartsLoaded] = useState(false);
@@ -40,46 +53,35 @@ export default function Dashboard() {
     { month: "2026", value: 33 },
   ];
 
-  const revenueData = revenueView === "monthly" ? monthlyRevenue : yearlyRevenue;
+  const revenueData =
+    revenueView === "monthly" ? monthlyRevenue : yearlyRevenue;
   const revenueTotal = revenueView === "monthly" ? "$486.00" : "$5,567.00";
 
-  const today = new Date();
-  const formattedDate = today.toLocaleDateString("en-US", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
+  const { data: rawOrders = [], isLoading: ordersLoading } = useQuery({
+    queryKey: ["orders"],
+    queryFn: fetchOrders,
+    staleTime: 1000 * 60 * 5,
   });
 
-  const recentSales = [
-    {
-      id: "789901",
-      date: "2 Dec 2026",
-      customer: "Oliver John Brown",
-      category: "Shoes, Shirt",
-      status: "Pending",
-      items: "2 Items",
-      total: "$789.00",
-    },
-    {
-      id: "789902",
-      date: "1 Dec 2026",
-      customer: "Noah James Smith",
-      category: "Sneakers, T-shirt",
-      status: "Completed",
-      items: "3 Items",
-      total: "$967.00",
-    },
-    {
-      id: "789903",
-      date: "28 Nov 2026",
-      customer: "Amelia Victoria",
-      category: "Bags, Jacket",
-      status: "Shipped",
-      items: "1 Item",
-      total: "$349.00",
-    },
-  ];
+  const recentSales = rawOrders.map((cart) => ({
+    id: String(cart.id).padStart(6, "0"),
+    date: new Date(BASE_DATE - cart.id * 86400000).toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }),
+    customer: cart.userId ? `User #${cart.userId}` : "Unknown",
+    category:
+      (cart.products ?? [])
+        .slice(0, 2)
+        .map((p) => p.title)
+        .join(", ") || "—",
+    status: STATUSES[cart.id % STATUSES.length],
+    items: `${cart.totalProducts ?? cart.products?.length ?? 0} Item${
+      (cart.totalProducts ?? cart.products?.length ?? 0) === 1 ? "" : "s"
+    }`,
+    total: `$${Number(cart.discountedTotal ?? cart.total ?? 0).toFixed(2)}`,
+  }));
 
   return (
     <>
@@ -93,7 +95,9 @@ export default function Dashboard() {
           <article key={metric.label} className="metric-card">
             <div className="metric-label">{metric.label}</div>
             <div className="metric-value">{metric.value}</div>
-            <div className="metric-delta">{metric.delta} from the last month</div>
+            <div className="metric-delta">
+              {metric.delta} from the last month
+            </div>
           </article>
         ))}
       </section>
@@ -109,7 +113,9 @@ export default function Dashboard() {
               <button
                 type="button"
                 className={
-                  revenueView === "monthly" ? "solid-button small" : "ghost-button"
+                  revenueView === "monthly"
+                    ? "solid-button small"
+                    : "ghost-button"
                 }
                 onClick={() => setRevenueView("monthly")}
                 aria-pressed={revenueView === "monthly"}
@@ -119,7 +125,9 @@ export default function Dashboard() {
               <button
                 type="button"
                 className={
-                  revenueView === "yearly" ? "solid-button small" : "ghost-button"
+                  revenueView === "yearly"
+                    ? "solid-button small"
+                    : "ghost-button"
                 }
                 onClick={() => setRevenueView("yearly")}
                 aria-pressed={revenueView === "yearly"}
@@ -144,7 +152,9 @@ export default function Dashboard() {
           </div>
         </article>
 
-        <article className={`chart-card gauge-card ${chartsLoaded ? "gauge-loaded" : ""}`}>
+        <article
+          className={`chart-card gauge-card ${chartsLoaded ? "gauge-loaded" : ""}`}
+        >
           <h3>Sales Overview</h3>
           <div className="gauge">
             <div className="gauge-arc" />
@@ -182,21 +192,29 @@ export default function Dashboard() {
             </tr>
           </thead>
           <tbody>
-            {recentSales.map((row) => (
-              <tr key={row.id}>
-                <td>{row.id}</td>
-                <td>{row.date}</td>
-                <td>{row.customer}</td>
-                <td>{row.category}</td>
-                <td>
-                  <span className={`status-chip ${row.status.toLowerCase()}`}>
-                    {row.status}
-                  </span>
+            {ordersLoading ? (
+              <tr>
+                <td colSpan="7">
+                  <div className="people-state">Loading recent sales...</div>
                 </td>
-                <td>{row.items}</td>
-                <td>{row.total}</td>
               </tr>
-            ))}
+            ) : (
+              recentSales.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.id}</td>
+                  <td>{row.date}</td>
+                  <td>{row.customer}</td>
+                  <td>{row.category}</td>
+                  <td>
+                    <span className={`status-chip ${row.status.toLowerCase()}`}>
+                      {row.status}
+                    </span>
+                  </td>
+                  <td>{row.items}</td>
+                  <td>{row.total}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </section>
