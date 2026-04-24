@@ -1,4 +1,13 @@
+import { useEffect, useState } from "react";
+
 export default function Dashboard() {
+  const [chartsLoaded, setChartsLoaded] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setChartsLoaded(true), 80);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const metrics = [
     { label: "Total Orders", value: "2,500", delta: "+4.9%" },
     { label: "Total Customers", value: "1,340", delta: "+2.7%" },
@@ -85,11 +94,14 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="bars">
-            {monthlyRevenue.map((bar) => (
+            {monthlyRevenue.map((bar, index) => (
               <div key={bar.month} className="bar-wrap">
                 <div
-                  className={`bar ${bar.highlight ? "highlight" : ""}`}
-                  style={{ height: `${bar.value * 4}px` }}
+                  className={`bar ${bar.highlight ? "highlight" : ""} ${chartsLoaded ? "bar-loaded" : ""}`}
+                  style={{
+                    height: `${bar.value * 4}px`,
+                    animationDelay: `${index * 55}ms`,
+                  }}
                 />
                 <span>{bar.month}</span>
               </div>
@@ -97,7 +109,7 @@ export default function Dashboard() {
           </div>
         </article>
 
-        <article className="chart-card gauge-card">
+        <article className={`chart-card gauge-card ${chartsLoaded ? "gauge-loaded" : ""}`}>
           <h3>Sales Overview</h3>
           <div className="gauge">
             <div className="gauge-arc" />
