@@ -1,6 +1,16 @@
 import axios from "axios";
 
+const api = axios.create({
+  baseURL: "https://dummyjson.com",
+});
+
 export const fetchUsers = async () => {
-  const res = await axios.get("https://dummyjson.com/users");
-  return res.data.users;
+  const response = await api.get("/users", {
+    params: {
+      limit: 100,
+      skip: 0,
+    },
+  });
+
+  return response.data.users ?? [];
 };

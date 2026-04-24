@@ -1,68 +1,14 @@
-const people = [
-  {
-    name: "Junaid Ansari",
-    email: "shayan.ali@gmail.com",
-    members: "-",
-    phone: "+1 (925) 589-2845",
-    tags: ["Imam", "Muazzin", "Khateeb"],
-    membership: "Individual",
-  },
-  {
-    name: "Faisal Khan",
-    email: "faisal.khan@gmail.com",
-    members: "-",
-    phone: "+1 (925) 589-2485",
-    tags: ["Hafiz", "Alim", "Qari"],
-    membership: "Individual",
-  },
-  {
-    name: "Ayaan Khan",
-    email: "ayaan.khan@gmail.com",
-    members: "Brother",
-    phone: "+1 (408) 555-0123",
-    tags: ["Scholar", "Teacher", "Volunteer"],
-    membership: "Family",
-  },
-  {
-    name: "Fatima Zahra",
-    email: "kamran.ali@gmail.com",
-    members: "Sister",
-    phone: "+1 (202) 555-0190",
-    tags: ["Student", "Staff", "Visitor"],
-    membership: "Family",
-  },
-  {
-    name: "Nasir Sheikh",
-    email: "nasir.sheikh@gmail.com",
-    members: "-",
-    phone: "+1 (512) 555-0167",
-    tags: ["Khateeb", "Donor"],
-    membership: "Individual",
-  },
-  {
-    name: "Adnan Syed",
-    email: "adnan.syed@gmail.com",
-    members: "Brother",
-    phone: "+1 (617) 555-0145",
-    tags: ["Sadaqah Donor", "Sponsor"],
-    membership: "Family",
-  },
-  {
-    name: "Hassan Raza",
-    email: "hassan.raza@gmail.com",
-    members: "-",
-    phone: "+1 (415) 555-0186",
-    tags: ["Event Organizer", "Elder"],
-    membership: "Individual",
-  },
-  {
-    name: "Aisha Hassan",
-    email: "saif.rahman@gmail.com",
-    members: "Sister",
-    phone: "+1 (321) 555-0105",
-    tags: ["New Muslim", "Revert", "Youth"],
-    membership: "Family",
-  },
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchUsers } from "../services/api";
+
+const PAGE_SIZE = 10;
+
+const SORT_OPTIONS = [
+  { value: "name-asc", label: "Name (A-Z)" },
+  { value: "name-desc", label: "Name (Z-A)" },
+  { value: "email-asc", label: "Email (A-Z)" },
+  { value: "email-desc", label: "Email (Z-A)" },
 ];
 
 function initials(name) {
@@ -74,7 +20,110 @@ function initials(name) {
     .toUpperCase();
 }
 
+function mapUserToPerson(user) {
+  const fullName = `${user.firstName} ${user.lastName}`;
+
+  return {
+    id: user.id,
+    name: fullName,
+    email: user.email,
+    members: user.gender === "female" ? "Sister" : "Brother",
+    phone: user.phone,
+    tags: [
+      user.company?.department,
+      user.company?.title,
+      user.university,
+    ].filter(Boolean),
+    membership: user.company?.department ? "Family" : "Individual",
+    avatar: user.image,
+  };
+}
+
+function sortPeople(people, sortValue) {
+  const [field, direction] = sortValue.split("-");
+  const multiplier = direction === "desc" ? -1 : 1;
+
+  return [...people].sort((a, b) => {
+    const aValue = (a[field] ?? "").toString().toLowerCase();
+    const bValue = (b[field] ?? "").toString().toLowerCase();
+
+    if (aValue < bValue) {
+      return -1 * multiplier;
+    }
+
+    if (aValue > bValue) {
+      return 1 * multiplier;
+    }
+
+    return 0;
+  });
+}
+
 export default function People() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("name-asc");
+  const [page, setPage] = useState(1);
+
+  const {
+    data = [],
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["people"],
+    queryFn: fetchUsers,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const people = useMemo(() => data.map(mapUserToPerson), [data]);
+
+  const filteredAndSortedPeople = useMemo(() => {
+    const trimmed = searchQuery.trim().toLowerCase();
+    const filtered = trimmed
+      ? people.filter((person) => {
+          const joinedTags = person.tags.join(" ").toLowerCase();
+          return (
+            person.name.toLowerCase().includes(trimmed) ||
+            person.email.toLowerCase().includes(trimmed) ||
+            person.phone.toLowerCase().includes(trimmed) ||
+            joinedTags.includes(trimmed)
+          );
+        })
+      : people;
+
+    return sortPeople(filtered, sortBy);
+  }, [people, searchQuery, sortBy]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredAndSortedPeople.length / PAGE_SIZE),
+  );
+
+  const paginatedPeople = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filteredAndSortedPeople.slice(start, start + PAGE_SIZE);
+  }, [filteredAndSortedPeople, page]);
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+    setPage(1);
+  };
+
+  const handleSortChange = (event) => {
+    setSortBy(event.target.value);
+    setPage(1);
+  };
+
+  const goToPreviousPage = () => {
+    setPage((currentPage) => Math.max(1, currentPage - 1));
+  };
+
+  const goToNextPage = () => {
+    setPage((currentPage) => Math.min(totalPages, currentPage + 1));
+  };
+
+  const visibleResults = paginatedPeople.length;
+
   return (
     <>
       <header className="people-header">
@@ -83,10 +132,23 @@ export default function People() {
           <p>Manage members, contacts, and tags in one place.</p>
         </div>
         <div className="people-actions">
-          <input type="text" placeholder="Search people..." />
-          <button type="button" className="ghost-button">
-            Filter
-          </button>
+          <input
+            type="text"
+            placeholder="Search people by name, email, phone, or tag..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+          />
+          <select
+            className="people-sort-select"
+            value={sortBy}
+            onChange={handleSortChange}
+          >
+            {SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           <button type="button" className="solid-button">
             Add People
           </button>
@@ -105,59 +167,153 @@ export default function People() {
             </button>
           </div>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email Address</th>
-              <th>Members</th>
-              <th>Phone Number</th>
-              <th>Tag</th>
-              <th>Membership</th>
-            </tr>
-          </thead>
-          <tbody>
-            {people.map((person) => (
-              <tr key={`${person.email}-${person.phone}`}>
-                <td>
-                  <div className="name-cell">
-                    <div className="avatar">{initials(person.name)}</div>
-                    <span>{person.name}</span>
-                  </div>
-                </td>
-                <td>{person.email}</td>
-                <td>{person.members}</td>
-                <td>{person.phone}</td>
-                <td>
-                  <div className="tag-list">
-                    {person.tags.map((tag) => (
-                      <span key={`${person.email}-${tag}`} className="tag-chip">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td>{person.membership}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+        {isLoading ? (
+          <div className="people-state">Loading people...</div>
+        ) : null}
+
+        {isError ? (
+          <div className="people-state people-error">
+            Failed to load people: {error?.message || "Unknown error"}
+          </div>
+        ) : null}
+
+        {!isLoading && !isError ? (
+          <>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email Address</th>
+                  <th>Members</th>
+                  <th>Phone Number</th>
+                  <th>Tag</th>
+                  <th>Membership</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedPeople.length === 0 ? (
+                  <tr>
+                    <td colSpan="6">
+                      <div className="people-state">
+                        No people matched your search.
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedPeople.map((person) => (
+                    <tr key={person.id}>
+                      <td>
+                        <div className="name-cell">
+                          {person.avatar ? (
+                            <img
+                              src={person.avatar}
+                              alt={person.name}
+                              className="avatar-image"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="avatar">
+                              {initials(person.name)}
+                            </div>
+                          )}
+                          <span>{person.name}</span>
+                        </div>
+                      </td>
+                      <td>{person.email}</td>
+                      <td>{person.members}</td>
+                      <td>{person.phone}</td>
+                      <td>
+                        <div className="tag-list">
+                          {person.tags.map((tag) => (
+                            <span
+                              key={`${person.id}-${tag}`}
+                              className="tag-chip"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td>{person.membership}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+
+            <div className="people-mobile-list">
+              {paginatedPeople.length === 0 ? (
+                <div className="people-state">
+                  No people matched your search.
+                </div>
+              ) : (
+                paginatedPeople.map((person) => (
+                  <article
+                    key={`mobile-${person.id}`}
+                    className="people-mobile-card"
+                  >
+                    <div className="name-cell">
+                      {person.avatar ? (
+                        <img
+                          src={person.avatar}
+                          alt={person.name}
+                          className="avatar-image"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="avatar">{initials(person.name)}</div>
+                      )}
+                      <div>
+                        <strong>{person.name}</strong>
+                        <p>{person.email}</p>
+                      </div>
+                    </div>
+                    <div className="people-mobile-meta">
+                      <span>{person.phone}</span>
+                      <span>{person.membership}</span>
+                    </div>
+                    <div className="tag-list">
+                      {person.tags.map((tag) => (
+                        <span
+                          key={`mobile-${person.id}-${tag}`}
+                          className="tag-chip"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+          </>
+        ) : null}
       </section>
 
       <footer className="people-footer">
-        <span>Show Results:</span>
-        <button type="button" className="ghost-button">
-          15
-        </button>
+        <span>
+          Showing {visibleResults} of {filteredAndSortedPeople.length} results
+        </span>
         <div className="pager">
-          <button type="button" className="ghost-button">
-            1
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={goToPreviousPage}
+            disabled={page === 1}
+          >
+            Prev
           </button>
-          <button type="button" className="ghost-button">
-            2
-          </button>
-          <button type="button" className="ghost-button">
-            3
+          <span className="page-status">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={goToNextPage}
+            disabled={page === totalPages}
+          >
+            Next
           </button>
         </div>
       </footer>
