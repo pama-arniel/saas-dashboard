@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 export default function Dashboard() {
   const [chartsLoaded, setChartsLoaded] = useState(false);
+  const [revenueView, setRevenueView] = useState("yearly");
 
   useEffect(() => {
     const timer = window.setTimeout(() => setChartsLoaded(true), 80);
@@ -29,6 +30,18 @@ export default function Dashboard() {
     { month: "Nov", value: 25 },
     { month: "Dec", value: 29 },
   ];
+
+  const yearlyRevenue = [
+    { month: "2021", value: 14 },
+    { month: "2022", value: 19 },
+    { month: "2023", value: 23 },
+    { month: "2024", value: 28 },
+    { month: "2025", value: 31, highlight: true },
+    { month: "2026", value: 33 },
+  ];
+
+  const revenueData = revenueView === "monthly" ? monthlyRevenue : yearlyRevenue;
+  const revenueTotal = revenueView === "monthly" ? "$486.00" : "$5,567.00";
 
   const recentSales = [
     {
@@ -82,19 +95,33 @@ export default function Dashboard() {
           <div className="chart-card-head">
             <div>
               <h3>Revenue Insights</h3>
-              <div className="chart-big">$5,567.00</div>
+              <div className="chart-big">{revenueTotal}</div>
             </div>
             <div className="chart-toggle">
-              <button type="button" className="ghost-button">
+              <button
+                type="button"
+                className={
+                  revenueView === "monthly" ? "solid-button small" : "ghost-button"
+                }
+                onClick={() => setRevenueView("monthly")}
+                aria-pressed={revenueView === "monthly"}
+              >
                 Monthly
               </button>
-              <button type="button" className="solid-button small">
+              <button
+                type="button"
+                className={
+                  revenueView === "yearly" ? "solid-button small" : "ghost-button"
+                }
+                onClick={() => setRevenueView("yearly")}
+                aria-pressed={revenueView === "yearly"}
+              >
                 Yearly
               </button>
             </div>
           </div>
           <div className="bars">
-            {monthlyRevenue.map((bar, index) => (
+            {revenueData.map((bar, index) => (
               <div key={bar.month} className="bar-wrap">
                 <div
                   className={`bar ${bar.highlight ? "highlight" : ""} ${chartsLoaded ? "bar-loaded" : ""}`}
