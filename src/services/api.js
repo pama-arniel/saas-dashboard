@@ -28,7 +28,7 @@ export const deleteUser = (id) => api.delete(`/users/${id}`);
 
 // Keep existing for now
 export const fetchOrders = async () => {
-  const response = await api.get("/carts", {
+  const response = await api.get(`${api.defaults.dataDataURL}/carts`, {
     params: { limit: 10 },
   });
 
