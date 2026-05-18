@@ -1,16 +1,52 @@
 import { useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../AuthContext";
 
 const topbarTitleByPath = {
   "/overview": "Overview",
   "/people": "People",
 };
 
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="11" cy="11" r="6" />
+      <line x1="16.5" y1="16.5" x2="21" y2="21" />
+    </svg>
+  );
+}
+
+function HelpIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 16h.01" />
+      <path d="M9.5 9a2.5 2.5 0 1 1 5 1c0 1.5-1 2-1.75 2.5" />
+    </svg>
+  );
+}
+
+function BellIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M18 16.5V11a6 6 0 0 0-12 0v5.5L4 18h16l-2-1.5Z" />
+      <path d="M9 20a3 3 0 0 0 6 0" />
+    </svg>
+  );
+}
+
 export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const topbarTitle = topbarTitleByPath[location.pathname] || "Overview";
   const closeSidebar = () => setSidebarOpen(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <div className="screen shell-bg">
@@ -98,9 +134,7 @@ export default function MainLayout() {
 
             <div className="main-topbar-search-wrap">
               <div className="main-topbar-search">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M10 4a6 6 0 1 1 0 12 6 6 0 0 1 0-12zm0-2a8 8 0 1 0 4.9 14.3l4.4 4.4 1.4-1.4-4.4-4.4A8 8 0 0 0 10 2z" />
-                </svg>
+                <SearchIcon />
                 <input
                   type="text"
                   placeholder="Search orders, products, or customers..."
@@ -114,22 +148,23 @@ export default function MainLayout() {
 
             <div className="main-topbar-right">
               <button type="button" className="icon-circle" aria-label="Help">
-                ?
+                <HelpIcon />
               </button>
               <button
                 type="button"
                 className="icon-circle"
                 aria-label="Notifications"
               >
-                o
+                <BellIcon />
               </button>
-              <button type="button" className="avatar-btn" aria-label="Profile">
-                <img
-                  src="https://i.pravatar.cc/72?img=12"
-                  alt="Profile"
-                  className="avatar-image-topbar"
-                  loading="lazy"
-                />
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="logout-button"
+                aria-label="Logout"
+              >
+                Logout
+                <span aria-hidden="true">↩</span>
               </button>
             </div>
           </header>
