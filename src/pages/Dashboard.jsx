@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "../AuthContext";
 import { fetchOrders } from "../services/api";
 
 const today = new Date();
@@ -63,6 +64,9 @@ export default function Dashboard() {
     staleTime: 1000 * 60 * 5,
   });
 
+  const { user } = useAuth();
+  const displayName = user?.name ? user.name.split(' ')[0] : 'Sajibul';
+
   const recentSales = rawOrders.map((cart) => ({
     id: String(cart.id).padStart(6, "0"),
     date: new Date(BASE_DATE - cart.id * 86400000).toLocaleDateString("en-US", {
@@ -86,7 +90,7 @@ export default function Dashboard() {
   return (
     <>
       <section className="welcome-row">
-        <h1>Welcome back, Sajibul!</h1>
+        <h1>Welcome back, {displayName}!</h1>
         <p>{formattedDate}</p>
       </section>
 
