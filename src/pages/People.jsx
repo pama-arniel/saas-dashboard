@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchUsers } from "../services/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchUsers, createUser, updateUser, deleteUser } from "../services/api";
 
 const PAGE_SIZE = 10;
 
@@ -21,11 +21,11 @@ function initials(name) {
 }
 
 function mapUserToPerson(user) {
-  const fullName = `${user.firstName} ${user.lastName}`;
+  const fullName = user.name || [user.firstName, user.lastName].filter(Boolean).join(" ");
 
   return {
     id: user.id,
-    name: fullName,
+    name: fullName || "Unnamed User",
     email: user.email,
     members: user.gender === "female" ? "Sister" : "Brother",
     phone: user.phone,
@@ -63,6 +63,11 @@ export default function People() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("name-asc");
   const [page, setPage] = useState(1);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'user' });
+
+  const queryClient = useQueryClient();
 
   const {
     data = [],
@@ -74,6 +79,33 @@ export default function People() {
     queryFn: fetchUsers,
     staleTime: 1000 * 60 * 5,
   });
+
+  const createMutation = useMutation({
+    mutationFn: createUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['people']);
+      setModalOpen(false);
+      setFormData({ name: '', email: '', password: '', role: 'user' });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => updateUser(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['people']);
+      setModalOpen(false);
+      setEditingUser(null);
+      setFormData({ name: '', email: '', password: '', role: 'user' });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteUser,
+    onSuccess: () => queryClient.invalidateQueries(['people']),
+  });
+
+  const isSaving = createMutation.isLoading || updateMutation.isLoading;
+  const isDeleting = deleteMutation.isLoading;
 
   const people = useMemo(() => data.map(mapUserToPerson), [data]);
 
@@ -122,6 +154,37 @@ export default function People() {
     setPage((currentPage) => Math.min(totalPages, currentPage + 1));
   };
 
+  const openCreateModal = () => {
+    setEditingUser(null);
+    setFormData({ name: '', email: '', password: '', role: 'user' });
+    setModalOpen(true);
+  };
+
+  const openEditModal = (user) => {
+    setEditingUser(user);
+    setFormData({ name: user.name, email: user.email, password: '', role: user.role });
+    setModalOpen(true);
+  };
+
+  const handleFormChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (editingUser) {
+      updateMutation.mutate({ id: editingUser.id || editingUser._id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
+
+  const handleDelete = (id) => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      deleteMutation.mutate(id);
+    }
+  };
+
   const visibleResults = paginatedPeople.length;
 
   return (
@@ -149,7 +212,7 @@ export default function People() {
               </option>
             ))}
           </select>
-          <button type="button" className="solid-button">
+          <button type="button" className="solid-button" onClick={openCreateModal}>
             Add People
           </button>
         </div>
@@ -189,6 +252,7 @@ export default function People() {
                   <th>Phone Number</th>
                   <th>Tag</th>
                   <th>Membership</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -236,6 +300,16 @@ export default function People() {
                         </div>
                       </td>
                       <td>{person.membership}</td>
+                      <td>
+                        <div className="people-action-group">
+                          <button type="button" className="ghost-button small" onClick={() => openEditModal(person)} disabled={isDeleting}>
+                            Edit
+                          </button>
+                          <button type="button" className="ghost-button small" onClick={() => handleDelete(person.id)} disabled={isDeleting}>
+                            {isDeleting ? 'Deleting...' : 'Delete'}
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -317,6 +391,58 @@ export default function People() {
           </button>
         </div>
       </footer>
+
+      {modalOpen && (
+        <div className="modal-overlay" onClick={() => setModalOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>{editingUser ? 'Edit User' : 'Add User'}</h2>
+            <form onSubmit={handleSubmit}>
+              <input
+                name="name"
+                placeholder="Name"
+                value={formData.name}
+                onChange={handleFormChange}
+                required
+              />
+              <input
+                name="email"
+                placeholder="Email"
+                type="email"
+                value={formData.email}
+                onChange={handleFormChange}
+                required
+              />
+              {!editingUser && (
+                <input
+                  name="password"
+                  placeholder="Password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleFormChange}
+                  required
+                />
+              )}
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleFormChange}
+                disabled={isSaving}
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
+              <div className="modal-actions">
+                <button type="submit" className="solid-button" disabled={isSaving}>
+                  {isSaving ? (editingUser ? 'Updating...' : 'Creating...') : editingUser ? 'Update' : 'Create'}
+                </button>
+                <button type="button" className="ghost-button" onClick={() => setModalOpen(false)} disabled={isSaving}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }
