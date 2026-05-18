@@ -202,6 +202,12 @@ export default function Dashboard() {
                   <div className="people-state">Loading recent sales...</div>
                 </td>
               </tr>
+            ) : recentSales.length === 0 ? (
+              <tr>
+                <td colSpan="7">
+                  <div className="people-state">No recent sales.</div>
+                </td>
+              </tr>
             ) : (
               recentSales.map((row) => (
                 <tr key={row.id}>
