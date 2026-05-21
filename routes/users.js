@@ -39,7 +39,7 @@ router.put('/:id', auth, async (req, res) => {
 
   const { name, email, role } = req.body;
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, { name, email, role }, { new: true }).select('-password');
+    const user = await User.findByIdAndUpdate(req.params.id, { name, email, role }, { returnDocument: 'after' }).select('-password');
     res.json(user);
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
