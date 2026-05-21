@@ -24,7 +24,7 @@ function mapUserToPerson(user) {
   const fullName = user.name || [user.firstName, user.lastName].filter(Boolean).join(" ");
 
   return {
-    id: user.id,
+    id: user.id || user._id,
     name: fullName || "Unnamed User",
     email: user.email,
     members: user.gender === "female" ? "Sister" : "Brother",
@@ -36,6 +36,7 @@ function mapUserToPerson(user) {
     ].filter(Boolean),
     membership: user.company?.department ? "Family" : "Individual",
     avatar: user.image,
+    role: user.role,
   };
 }
 
@@ -66,6 +67,7 @@ export default function People() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'user' });
+  const [errorMessage, setErrorMessage] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -86,6 +88,10 @@ export default function People() {
       queryClient.invalidateQueries(['people']);
       setModalOpen(false);
       setFormData({ name: '', email: '', password: '', role: 'user' });
+      setErrorMessage(null);
+    },
+    onError: (error) => {
+      setErrorMessage(error?.response?.data?.message || error?.message || 'Failed to create user');
     },
   });
 
@@ -96,6 +102,10 @@ export default function People() {
       setModalOpen(false);
       setEditingUser(null);
       setFormData({ name: '', email: '', password: '', role: 'user' });
+      setErrorMessage(null);
+    },
+    onError: (error) => {
+      setErrorMessage(error?.response?.data?.message || error?.message || 'Failed to update user');
     },
   });
 
@@ -115,9 +125,9 @@ export default function People() {
       ? people.filter((person) => {
           const joinedTags = person.tags.join(" ").toLowerCase();
           return (
-            person.name.toLowerCase().includes(trimmed) ||
-            person.email.toLowerCase().includes(trimmed) ||
-            person.phone.toLowerCase().includes(trimmed) ||
+            person.name?.toLowerCase().includes(trimmed) ||
+            person.email?.toLowerCase().includes(trimmed) ||
+            person.phone?.toLowerCase().includes(trimmed) ||
             joinedTags.includes(trimmed)
           );
         })
@@ -157,12 +167,14 @@ export default function People() {
   const openCreateModal = () => {
     setEditingUser(null);
     setFormData({ name: '', email: '', password: '', role: 'user' });
+    setErrorMessage(null);
     setModalOpen(true);
   };
 
   const openEditModal = (user) => {
     setEditingUser(user);
     setFormData({ name: user.name, email: user.email, password: '', role: user.role });
+    setErrorMessage(null);
     setModalOpen(true);
   };
 
@@ -396,6 +408,11 @@ export default function People() {
         <div className="modal-overlay" onClick={() => setModalOpen(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{editingUser ? 'Edit User' : 'Add User'}</h2>
+            {errorMessage && (
+              <div className="error-message" style={{ color: '#dc2626', padding: '12px', backgroundColor: '#fee2e2', borderRadius: '4px', marginBottom: '16px', fontSize: '14px' }}>
+                {errorMessage}
+              </div>
+            )}
             <form onSubmit={handleSubmit}>
               <input
                 name="name"
@@ -435,7 +452,7 @@ export default function People() {
                 <button type="submit" className="solid-button" disabled={isSaving}>
                   {isSaving ? (editingUser ? 'Updating...' : 'Creating...') : editingUser ? 'Update' : 'Create'}
                 </button>
-                <button type="button" className="ghost-button" onClick={() => setModalOpen(false)} disabled={isSaving}>
+                <button type="button" className="ghost-button" onClick={() => { setModalOpen(false); setErrorMessage(null); }} disabled={isSaving}>
                   Cancel
                 </button>
               </div>
