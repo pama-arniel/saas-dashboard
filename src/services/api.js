@@ -1,8 +1,11 @@
 import axios from "axios";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const DATA_API_URL = import.meta.env.VITE_DATA_API_URL || "https://dummyjson.com";
+
 const api = axios.create({
-  baseURL: "http://localhost:5000",
-  dataDataURL: "https://dummyjson.com",
+  baseURL: API_URL,
+  dataDataURL: DATA_API_URL,
 });
 
 // Add token to requests
@@ -28,7 +31,7 @@ export const deleteUser = (id) => api.delete(`/users/${id}`);
 
 // Keep existing for now
 export const fetchOrders = async () => {
-  const response = await api.get(`${api.defaults.dataDataURL}/carts`, {
+  const response = await api.get(`${DATA_API_URL}/carts`, {
     params: { limit: 10 },
   });
 
