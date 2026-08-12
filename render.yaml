@@ -1,0 +1,18 @@
+# Render service configuration (example)
+# Replace repo and environment variable values in the Render dashboard when creating the service.
+
+services:
+  - type: web
+    name: saas-dashboard-backend
+    env: node
+    plan: free
+    branch: main
+    # Optionally set `repo` to your GitHub repo: "github.com/your-user/saas-dashboard"
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MONGO_URI
+        # Use Render dashboard to set this securely instead of hardcoding.
+        value: ""
+      - key: NODE_ENV
+        value: production
